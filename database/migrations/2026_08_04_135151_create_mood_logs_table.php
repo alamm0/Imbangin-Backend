@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->date('record_date');
-            $table->string('mood_type'); // Jenis emosi (senang, sedih, marah, dll)
-            $table->text('notes')->nullable(); // Jurnal singkat opsional
+            $table->string('mood_type'); 
+            $table->text('notes')->nullable(); 
             $table->timestamps();
         });
     }

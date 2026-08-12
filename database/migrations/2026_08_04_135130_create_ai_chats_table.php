@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('ai_chats', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->text('user_message'); // Pesan/pertanyaan dari kamu
-            $table->text('ai_response')->nullable(); // Balasan dari Imbangin AI
+            $table->text('user_message'); 
+            $table->text('ai_response')->nullable(); 
             $table->timestamps();
         });
     }

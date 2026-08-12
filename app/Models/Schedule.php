@@ -14,7 +14,7 @@ class Schedule extends Model
         'activity_name',
         'start_time',
         'schedule_date',
-        'is_done', // Jangan lupa tambahin ini
+        'is_done', 
     ];
 
     public function user()

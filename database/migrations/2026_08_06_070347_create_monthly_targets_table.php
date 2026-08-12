@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('monthly_targets', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Nyambung ke user yang login
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
             $table->string('name');
-            $table->boolean('is_done')->default(false); // Default ceklis = belum
+            $table->boolean('is_done')->default(false); 
             $table->timestamps();
         });
     }

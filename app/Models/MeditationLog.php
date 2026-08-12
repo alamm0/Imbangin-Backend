@@ -14,7 +14,7 @@ class MeditationLog extends Model
         'activity_name',
         'time',
         'points',
-        'is_done', // Jangan lupa tambahin ini
+        'is_done',
     ];
 
     public function user()

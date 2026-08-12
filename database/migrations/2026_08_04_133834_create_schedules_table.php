@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('activity_name');
-            $table->string('start_time'); // Jam mulai
-            $table->date('schedule_date')->nullable(); // Tanggal jadwal
-            $table->boolean('is_done')->default(false); // Kolom baru buat efek ceklis
+            $table->string('start_time'); 
+            $table->date('schedule_date')->nullable(); 
+            $table->boolean('is_done')->default(false); 
             $table->timestamps();
         });
     }

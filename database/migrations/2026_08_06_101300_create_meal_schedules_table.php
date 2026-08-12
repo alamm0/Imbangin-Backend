@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('meal_schedules', function (Blueprint $table) {
            $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('meal_name'); // Sarapan, Makan Siang, Makan Malam
-            $table->string('time_range'); // 07:00-09:00
-            $table->boolean('is_done')->default(false); // Buat fitur ceklis
+            $table->string('meal_name'); 
+            $table->string('time_range'); 
+            $table->boolean('is_done')->default(false); 
             $table->timestamps();
         });
     }
