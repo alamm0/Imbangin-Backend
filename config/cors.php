@@ -19,7 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://imbangin.vercel.app',
+    ],
 
     'allowed_origins_patterns' => [],
 
@@ -29,6 +33,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => true, // <-- Ubah jadi true agar token bisa dikirim
+    'supports_credentials' => true, 
 
 ];
