@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('daily_health_scores', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // Menyambungkan skor ini ke akun user yang login
-            $table->date('record_date'); // Tanggal skor dicatat (karena ini skor harian)
-            $table->integer('total_score')->default(0); // Skor besar (contoh: 20)
-            $table->integer('sleep_score')->default(0); // Poin tidur dari UI
-            $table->integer('food_score')->default(0);  // Poin makan dari UI
-            $table->integer('focus_score')->default(0); // Poin fokus dari UI
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete(); 
+            $table->date('record_date'); 
+            $table->integer('total_score')->default(0); 
+            $table->integer('sleep_score')->default(0); 
+            $table->integer('food_score')->default(0);  
+            $table->integer('focus_score')->default(0); 
             $table->timestamps();
         });
     }

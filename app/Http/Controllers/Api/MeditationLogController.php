@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\Api; // <-- INI OBATNYA (Ditambahin \Api)
+namespace App\Http\Controllers\Api; 
 
-use App\Http\Controllers\Controller; // Wajib di-import karena posisinya di sub-folder
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\MeditationLog;
 
@@ -25,7 +25,7 @@ class MeditationLogController extends Controller
             'user_id' => $request->user()->id,
             'activity_name' => $request->activity_name,
             'time' => $request->time,
-            'is_done' => false // Set default false saat baru dibikin
+            'is_done' => false 
         ]);
 
         return response()->json($log, 201);
@@ -39,7 +39,6 @@ class MeditationLogController extends Controller
             return response()->json(['message' => 'Data tidak ditemukan'], 404);
         }
 
-        // PAKAI $request->boolean() BIAR LARAVEL PAHAM DATA DARI REACT
         if ($request->exists('is_done')) {
             $log->is_done = $request->boolean('is_done');
         }

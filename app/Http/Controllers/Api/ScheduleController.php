@@ -35,7 +35,6 @@ class ScheduleController extends Controller
     {
         $schedule = Schedule::where('user_id', $request->user()->id)->findOrFail($id);
         
-        // Kita pakai sometimes biar endpoint ini bisa dipakai buat ngedit nama aktivitas ATAU sekadar ngeceklis
         $request->validate([
             'activity_name' => 'sometimes|required|string',
             'start_time' => 'sometimes|required|string',

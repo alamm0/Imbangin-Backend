@@ -5,55 +5,66 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\SleepTracker;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Carbon\Carbon;
 
 class SleepTrackerController extends Controller
 {
-    public function index(Request $request)
+    // Ambil data tidur terakhir user
+    public function index(Request $request): JsonResponse
     {
-        // Ambil data tidur terakhir user
-        $log = SleepTracker::firstOrCreate(
-            ['user_id' => $request->user()->id],
-            ['sleep_time' => '22:00', 'wake_time' => '05:00', 'duration_hours' => 7, 'quality' => 'Ideal']
-        );
-        return response()->json($log);
+        $log = SleepTracker::where('user_id', $request->user()->id)->first();
+
+        return response()->json([
+            'status' => 'sukses',
+            'pesan' => $log ? 'Data tidur ditemukan.' : 'Belum ada riwayat tidur.',
+            'data' => $log
+        ], 200);
     }
 
-    public function store(Request $request)
+    // Simpan atau update durasi tidur harian
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'sleep_time' => 'required|string',
-            'wake_time' => 'required|string',
+            'sleep_time' => 'required|date_format:H:i',
+            'wake_time' => 'required|date_format:H:i',
         ]);
 
-        // LOGIKA PERHITUNGAN TIDUR DIPINDAH KE LARAVEL
-        $start = explode(':', $request->sleep_time);
-        $end = explode(':', $request->wake_time);
-        
-        $startInMins = ($start[0] * 60) + $start[1];
-        $endInMins = ($end[0] * 60) + $end[1];
-        
-        if ($endInMins <= $startInMins) {
-            $endInMins += 24 * 60; // Tambah 24 jam kalau tidurnya lewatin tengah malam
-        }
-        
-        $hours = floor(($endInMins - $startInMins) / 60);
-        
-        $quality = 'Biasa';
-        if ($hours < 6) $quality = 'Kurang';
-        else if ($hours >= 7 && $hours <= 8) $quality = 'Ideal';
-        else if ($hours > 8) $quality = 'Berlebih';
+        $sleepTime = Carbon::createFromFormat('H:i', $request->sleep_time);
+        $wakeTime = Carbon::createFromFormat('H:i', $request->wake_time);
 
-        // Simpan / Update ke database
+        // Tambah 1 hari jika waktu bangun melewati tengah malam
+        if ($wakeTime->lessThan($sleepTime)) {
+            $wakeTime->addDay();
+        }
+
+        $durationInHours = $sleepTime->diffInHours($wakeTime);
+        $quality = $this->hitungKualitasTidur($durationInHours);
+
         $log = SleepTracker::updateOrCreate(
             ['user_id' => $request->user()->id],
             [
                 'sleep_time' => $request->sleep_time,
                 'wake_time' => $request->wake_time,
-                'duration_hours' => $hours,
+                'duration_hours' => $durationInHours,
                 'quality' => $quality
             ]
         );
 
-        return response()->json($log);
+        return response()->json([
+            'status' => 'sukses',
+            'pesan' => 'Data pelacakan tidur berhasil disimpan!',
+            'data' => $log
+        ], 201);
+    }
+
+    // Penentuan kategori kualitas tidur
+    private function hitungKualitasTidur(int $hours): string
+    {
+        if ($hours < 6) return 'Kurang';
+        if ($hours >= 7 && $hours <= 8) return 'Ideal';
+        if ($hours > 8) return 'Berlebih';
+        
+        return 'Biasa';
     }
 }

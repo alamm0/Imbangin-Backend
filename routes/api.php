@@ -1,41 +1,44 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
+// Controllers
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Api\DailyHealthScoreController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\SleepTrackerController;
 use App\Http\Controllers\Api\FocusTimerController;
-use App\Http\Controllers\Api\ImbanginCoinController;
 use App\Http\Controllers\Api\MoodLogController;
 use App\Http\Controllers\Api\MeditationLogController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Api\MonthlyTargetController;
 use App\Http\Controllers\Api\MealScheduleController;
-use App\Http\Controllers\Api\ChatController; // <-- Gw tambahin impor buat ChatController yang bener
+use App\Http\Controllers\Api\ChatController;
 
-// --- RUTE PUBLIK (TIDAK BUTUH LOGIN) ---
+// Rute Publik (Tidak Membutuhkan Token Login)
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// --- RUTE YANG WAJIB MEMBAWA TOKEN LOGIN (SANCTUM) ---
+// Rute Terproteksi (Wajib Membawa Token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
+    
+    // Dashboard & Target Utama
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::apiResource('monthly-targets', MonthlyTargetController::class);
     
-    // Fitur CRUD otomatis (GET, POST, PUT, DELETE) untuk semua modul
+    // Modul Kesehatan Fisik
     Route::apiResource('schedules', ScheduleController::class);
-    Route::apiResource('sleep-trackers', SleepTrackerController::class);
-    Route::apiResource('focus-timers', FocusTimerController::class);
-    Route::apiResource('imbangin-coins', ImbanginCoinController::class);
-    Route::apiResource('mood-logs', MoodLogController::class);
-    Route::apiResource('meditation-logs', MeditationLogController::class);
     Route::apiResource('meal-schedules', MealScheduleController::class);
+    Route::apiResource('sleep-trackers', SleepTrackerController::class);
+    
+    // Modul Kesehatan Mental & Fokus
+    Route::apiResource('meditation-logs', MeditationLogController::class);
+    Route::apiResource('mood-logs', MoodLogController::class);
+    Route::apiResource('focus-timers', FocusTimerController::class);
 
-    // Rute tunggal untuk IMBANGIN AI
+    // Integrasi IMBANGIN AI
     Route::post('/chat', [ChatController::class, 'sendMessage'])->name('chat.send');
 });
 
-// Rute Skor Kesehatan (Opsional / Dummy)
+// Rute Lainnya
 Route::get('/skor-kesehatan', [DailyHealthScoreController::class, 'index']);
-Route::get('/skor-kesehatan/dummy', [DailyHealthScoreController::class, 'buatDummy']);

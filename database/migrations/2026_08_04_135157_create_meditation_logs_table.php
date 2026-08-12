@@ -17,10 +17,7 @@ return new class extends Migration
             $table->string('activity_name'); 
             $table->string('time');          
             $table->integer('points')->default(10); 
-            
-            // INI YANG KURANG: Kolom penanda jadwal udah selesai atau belum
             $table->boolean('is_done')->default(false); 
-            
             $table->timestamps();
         });
     }

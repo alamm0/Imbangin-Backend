@@ -13,7 +13,6 @@ class MealScheduleController extends Controller
         $userId = $request->user()->id;
         $meals = MealSchedule::where('user_id', $userId)->get();
 
-        // Kalau jadwal masih kosong melompong (baru daftar), otomatis buatin 3 jadwal default
         if ($meals->isEmpty()) {
             $defaultMeals = [
                 ['meal_name' => 'Sarapan', 'time_range' => '07:00-09:00'],
@@ -29,15 +28,12 @@ class MealScheduleController extends Controller
                     'is_done' => false
                 ]);
             }
-            
-            // Tarik ulang data yang baru aja dibuat
             $meals = MealSchedule::where('user_id', $userId)->get();
         }
 
         return response()->json($meals);
     }
 
-    // Fungsi khusus buat update status ceklis (is_done)
     public function update(Request $request, $id)
     {
         $meal = MealSchedule::where('user_id', $request->user()->id)->findOrFail($id);

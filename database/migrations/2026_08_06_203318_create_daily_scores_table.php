@@ -11,9 +11,9 @@ return new class extends Migration
         Schema::create('daily_scores', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->date('date'); // Buat nyatet ini skor tanggal berapa
-            $table->integer('score')->default(0); // Total skor gabungan di hari itu
-            $table->boolean('is_active')->default(false); // True kalau hari itu lu ada ngerjain minimal 1 jadwal
+            $table->date('date'); 
+            $table->integer('score')->default(0); 
+            $table->boolean('is_active')->default(false); 
             $table->timestamps();
         });
     }

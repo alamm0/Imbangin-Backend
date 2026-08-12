@@ -3,108 +3,129 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use App\Models\Schedule;
 use App\Models\MeditationLog;
-use App\Models\DailyScore; // <-- Wajib dipanggil
-use Carbon\Carbon; // <-- Buat ngatur tanggal
+use App\Models\DailyScore;
+use App\Models\SleepTracker;
+use App\Models\MealSchedule;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    // Mengambil semua data metrik untuk Dashboard React
+    public function index(Request $request): JsonResponse
     {
         $userId = $request->user()->id;
-        $today = Carbon::today()->toDateString(); // Ambil tanggal hari ini
+        $today = Carbon::today()->toDateString();
 
-        // 1. SKOR FISIK
-        $total_fisik = Schedule::where('user_id', $userId)->count();
-        $selesai_fisik = Schedule::where('user_id', $userId)->where('is_done', true)->count();
-        
-        $bobot_fisik = 0;
-        if ($total_fisik > 0) {
-            $bobot_fisik = 100 / $total_fisik;
-        }
-        $skor_fisik = $selesai_fisik * $bobot_fisik;
+        // Ambil Data Skor Fisik & Mental via Helper
+        $fisik = $this->hitungSkorFisik($userId);
+        $mental = $this->hitungSkorMental($userId);
 
-        // 2. SKOR MENTAL
-        $total_mental = MeditationLog::where('user_id', $userId)->count();
-        $selesai_mental = MeditationLog::where('user_id', $userId)->where('is_done', true)->count();
-        
-        $bobot_mental = 0;
-        if ($total_mental > 0) {
-            $bobot_mental = 100 / $total_mental;
-        }
-        $skor_mental = $selesai_mental * $bobot_mental;
+        // Kalkulasi Grand Total Harian
+        $totalSkor = ($fisik['skor'] + $mental['skor']) / 2;
+        $isActive = ($fisik['selesai'] > 0 || $mental['selesai'] > 0);
 
-        // 3. HITUNG GRAND TOTAL HARI INI
-        $total_skor = ($skor_fisik + $skor_mental) / 2;
-        
-        // Cek hari ini aktif atau nggak (minimal nyelesaiin 1 jadwal)
-        $is_active = ($selesai_fisik > 0 || $selesai_mental > 0);
-
-        // 4. OTOMATIS SIMPAN KE RAPOR HARIAN
+        // Simpan ke Rapor Harian
         DailyScore::updateOrCreate(
-            ['user_id' => $userId, 'date' => $today], // Cari data hari ini
-            ['score' => round($total_skor), 'is_active' => $is_active] // Update atau bikin baru
+            ['user_id' => $userId, 'date' => $today],
+            ['score' => round($totalSkor), 'is_active' => $isActive]
         );
 
-        // 5. HITUNG STATISTIK MINGGUAN (Senin - Minggu)
+        // Ambil Statistik Mingguan & Lencana
+        $statistik = $this->hitungStatistikMingguan($userId);
+        $lencana = $this->kalkulasiLencana($userId, $totalSkor);
+
+        // Kembalikan Response Standar
+        return response()->json([
+            'status' => 'sukses',
+            'pesan' => 'Data dashboard berhasil dimuat.',
+            'data' => [
+                'total_skor' => round($totalSkor),
+                'skor_fisik' => round($fisik['skor']),
+                'skor_mental' => round($mental['skor']),
+                'bobot_per_jadwal' => round($fisik['bobot'], 1),
+                'bobot_per_mental' => round($mental['bobot'], 1),
+                'target' => 100,
+                'rata_rata_mingguan' => $statistik['rata_rata'],
+                'hari_aktif' => $statistik['hari_aktif'],
+                
+                // Data Lencana
+                'total_hari_aktif' => $lencana['total_hari_aktif'],
+                'total_lencana' => $lencana['total_lencana'],
+                'badges' => $lencana['badges']
+            ]
+        ], 200);
+    }
+
+    // PRIVATE HELPER FUNCTIONS
+
+    private function hitungSkorFisik(int $userId): array
+    {
+        $total = Schedule::where('user_id', $userId)->count();
+        $selesai = Schedule::where('user_id', $userId)->where('is_done', true)->count();
+        $bobot = $total > 0 ? 100 / $total : 0;
+
+        return [
+            'skor' => $selesai * $bobot, 
+            'bobot' => $bobot, 
+            'selesai' => $selesai
+        ];
+    }
+
+    private function hitungSkorMental(int $userId): array
+    {
+        $total = MeditationLog::where('user_id', $userId)->count();
+        $selesai = MeditationLog::where('user_id', $userId)->where('is_done', true)->count();
+        $bobot = $total > 0 ? 100 / $total : 0;
+
+        return [
+            'skor' => $selesai * $bobot, 
+            'bobot' => $bobot, 
+            'selesai' => $selesai
+        ];
+    }
+
+    private function hitungStatistikMingguan(int $userId): array
+    {
         $startOfWeek = Carbon::now()->startOfWeek()->toDateString();
         $endOfWeek = Carbon::now()->endOfWeek()->toDateString();
 
-        $weekly_scores = DailyScore::where('user_id', $userId)
-                            ->whereBetween('date', [$startOfWeek, $endOfWeek])
-                            ->get();
+        $weeklyScores = DailyScore::where('user_id', $userId)
+            ->whereBetween('date', [$startOfWeek, $endOfWeek])
+            ->get();
 
-        // Hitung Rata-rata Skor (Hanya ngitung hari yang udah ada datanya biar adil)
-        $rata_rata_mingguan = $weekly_scores->count() > 0 ? round($weekly_scores->avg('score')) : 0;
+        return [
+            'rata_rata' => $weeklyScores->count() > 0 ? round($weeklyScores->avg('score')) : 0,
+            'hari_aktif' => $weeklyScores->where('is_active', true)->count()
+        ];
+    }
+
+    private function kalkulasiLencana(int $userId, float $totalSkor): array
+    {
+        $totalHariAktif = DailyScore::where('user_id', $userId)->where('is_active', true)->count();
         
-        // Hitung total Hari Aktif di minggu ini
-        $hari_aktif = $weekly_scores->where('is_active', true)->count();
-
-        // ... (Kode sebelumnya yang ngitung Rata-rata Mingguan) ...
-
-        // --- 6. LOGIKA LENCANA (ON-THE-FLY) & HARI AKTIF TOTAL ---
+        $badgeAktif30 = $totalHariAktif >= 30;
+        $badgeTidur = SleepTracker::where('user_id', $userId)->where('quality', 'like', '%Ideal%')->exists();
         
-        // A. Hitung Total Semua Hari Aktif (Bukan cuma minggu ini, tapi sejak awal daftar)
-        $total_hari_aktif = DailyScore::where('user_id', $userId)->where('is_active', true)->count();
-
-        // B. Cek Syarat 4 Lencana
-        // 1. Lencana Api: Minimal udah aktif 30 hari
-        $badge_aktif_30 = $total_hari_aktif >= 30;
+        $totalMakan = MealSchedule::where('user_id', $userId)->count();
+        $selesaiMakan = MealSchedule::where('user_id', $userId)->where('is_done', true)->count();
+        $badgeMakan = ($totalMakan > 0 && $totalMakan === $selesaiMakan);
         
-        // 2. Lencana Tidur: Punya minimal 1 rekor tidur dengan kualitas Ideal
-        $badge_tidur = \App\Models\SleepTracker::where('user_id', $userId)->where('quality', 'like', '%Ideal%')->exists();
-        
-        // 3. Lencana Makan: Udah ada jadwal makan, dan SEMUA jadwal makan hari ini ter-ceklis
-        $total_makan = \App\Models\MealSchedule::where('user_id', $userId)->count();
-        $selesai_makan = \App\Models\MealSchedule::where('user_id', $userId)->where('is_done', true)->count();
-        $badge_makan = ($total_makan > 0 && $total_makan == $selesai_makan);
-        
-        // 4. Lencana Raja Disiplin: Skor harian (Fisik + Mental) hari ini tembus 100
-        $badge_disiplin = $total_skor >= 100;
+        $badgeDisiplin = $totalSkor >= 100;
 
-        // C. Hitung total lencana yang berhasil kebuka
-        $total_lencana = (int)$badge_aktif_30 + (int)$badge_tidur + (int)$badge_makan + (int)$badge_disiplin;
+        $totalLencana = (int)$badgeAktif30 + (int)$badgeTidur + (int)$badgeMakan + (int)$badgeDisiplin;
 
-        return response()->json([
-            'total_skor' => round($total_skor),
-            'skor_fisik' => round($skor_fisik),
-            'skor_mental' => round($skor_mental),
-            'bobot_per_jadwal' => round($bobot_fisik, 1), 
-            'bobot_per_mental' => round($bobot_mental, 1), 
-            'target' => 100,
-            'rata_rata_mingguan' => $rata_rata_mingguan,
-            'hari_aktif' => $hari_aktif,
-            
-            // --- KIRIM DATA LENCANA KE REACT ---
-            'total_hari_aktif' => $total_hari_aktif,
-            'total_lencana' => $total_lencana,
+        return [
+            'total_hari_aktif' => $totalHariAktif,
+            'total_lencana' => $totalLencana,
             'badges' => [
-                'aktif_30' => $badge_aktif_30,
-                'tidur' => $badge_tidur,
-                'makan' => $badge_makan,
-                'disiplin' => $badge_disiplin
+                'aktif_30' => $badgeAktif30,
+                'tidur' => $badgeTidur,
+                'makan' => $badgeMakan,
+                'disiplin' => $badgeDisiplin
             ]
-        ]);
+        ];
     }
 }

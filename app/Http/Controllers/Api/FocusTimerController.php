@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 
 class FocusTimerController extends Controller
 {
-    // Mengambil pengaturan timer user (kalau kosong, kembalikan nilai default)
     public function index(Request $request)
     {
         $timer = FocusTimer::firstOrCreate(
@@ -19,7 +18,6 @@ class FocusTimerController extends Controller
         return response()->json($timer);
     }
 
-    // Menyimpan atau mengupdate pengaturan timer
     public function store(Request $request)
     {
         $request->validate([
