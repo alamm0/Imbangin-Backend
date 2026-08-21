@@ -22,6 +22,7 @@ return [
     'allowed_origins' => [
         'http://localhost:5173',
         'https://imbangin.vercel.app',
+        'https://imbangin-frontend.vercel.app',
     ],
 
     'allowed_origins_patterns' => [],
